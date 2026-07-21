@@ -4,6 +4,10 @@ use std::path::Path;
 use walkdir::WalkDir;
 use std::process::Command;
 
+use std::process::Stdio;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::time::Duration;
+
 /// Get the data
 #[derive(Parser)]
 struct Cli {
@@ -15,17 +19,29 @@ struct Cli {
 }
 
 /// Build a container image with podman from the path
-fn build_image(file: &Path) {
+fn build_image(file: &Path) -> Result<(), String> {
+
+  let spinner = ProgressBar::new_spinner();
+  spinner.set_style(
+    ProgressStyle::with_template("{spinner} {msg}")
+      .unwrap()
+  );
+  // spinner.set_message(format!("Building {}", file.display()));
+  spinner.enable_steady_tick(Duration::from_millis(100));
+
   let build_status = Command::new("podman")
     .args(["build", "-t", "temp-image"])
     .arg("-f")
     .arg(file)
+    .stdout(Stdio::null())
+    .stderr(Stdio::null())
     .status()
-    .expect("failed to run podman");
+    .map_err(|e| format!("failed to run podman: {e}"))?;
+
+  spinner.finish_and_clear();
 
   if !build_status.success() {
-    eprintln!("podman build failed with status: {build_status}");
-    std::process::exit(1);
+    return Err(format!("podman build failed with status: {build_status}"));
   }
 
   println!("Build succeeded for '{}'", file.display());
@@ -35,14 +51,14 @@ fn build_image(file: &Path) {
   let remove_status = Command::new("podman")
     .args(["rmi", "temp-image"])
     .status()
-    .expect("failed to run podman rmi");
+    .map_err(|e| format!("failed to run podman rmi: {e}"))?;
 
   if !remove_status.success() {
-    eprintln!("podman rmi failed with status: {remove_status}");
-    std::process::exit(1);
+    return Err(format!("podman rmi failed with status: {remove_status}"));
   }
-}
 
+  Ok(())
+}
 
 
 /// Find all the Docker/Container files
@@ -74,6 +90,7 @@ fn find_files(cli: &Cli) -> Vec<PathBuf> {
   files
 }
 
+/// Get a vector of files to build
 fn get_files(cli: &Cli) -> Result<Vec<PathBuf>, String> {
   match (&cli.file, &cli.path) {
     // A single file was provided
@@ -129,8 +146,26 @@ fn main() {
     }
   };
 
+  // for file in files {
+  //   println!("Building image from '{}'", file.display());
+  //   build_image(&file);
+  // }
+  
+  let mut failures = Vec::new();
+
   for file in files {
     println!("Building image from '{}'", file.display());
-    build_image(&file);
+
+    if let Err(err) = build_image(&file) {
+      failures.push(format!("{}: {}", file.display(), err));
+    }
+  }
+
+  if !failures.is_empty() {
+    println!("\nFailed builds:");
+
+    for failure in failures {
+      println!("  {}", failure);
+    }
   }
 }
