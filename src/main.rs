@@ -53,9 +53,55 @@ struct Cli {
     output: PathBuf,
 }
 
+/// Ensures Podman is available and, if necessary, starts the Podman machine.
+///
+/// On Linux:
+///   - Only checks that `podman` exists.
+///
+/// On macOS/Windows:
+///   - Checks that `podman` exists.
+///   - Starts the default Podman machine if it isn't already running.
+fn podman_ready() -> Result<(), String> {
+    // Check whether podman exists
+    let version = Command::new("podman")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    match version {
+        Ok(status) if status.success() => {}
+        Ok(_) => {
+            return Err("Podman is installed but failed to run.".to_string());
+        }
+        Err(_) => {
+            return Err(
+                "Podman is not installed or is not available in PATH.".to_string(),
+            );
+        }
+    }
+
+    // Only macOS and Windows require a Podman machine.
+    if cfg!(target_os = "macos") || cfg!(target_os = "windows") {
+        let status = Command::new("podman")
+            .args(["machine", "start"])
+            .status()
+            .map_err(|e| format!("Failed to start Podman machine: {e}"))?;
+
+        if !status.success() {
+            return Err(format!(
+                "Failed to start Podman machine (exit code: {status})"
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 /// Build a container image with podman from the path
 fn build_image(file: &Path) -> Result<(), String> {
 
+  podman_ready()?;
   let spinner = ProgressBar::new_spinner();
   spinner.set_style(
     ProgressStyle::with_template("{spinner} {msg}")
@@ -270,7 +316,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(err) = build_image(&file) {
       let failure = format!("{}: {}", file.display(), err);
 
-      eprintln!("⚠ Build failed: {}", failure);
+      eprintln!("X Build failed: {}", failure);
 
       failures.push(failure);
       continue;
