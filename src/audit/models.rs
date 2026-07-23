@@ -1,34 +1,15 @@
-use serde::{
-  Serialize,
-  Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-
-#[derive(
-  Debug,
-  Serialize,
-  Deserialize
-)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AuditReport {
+    pub python_packages: Option<Vec<Package>>,
 
-  pub python_packages:
-    Option<Vec<Package>>,
-
-
-  pub r_packages:
-    Option<Vec<Package>>,
+    pub r_packages: Option<Vec<Package>>,
 }
 
-
-
-#[derive(
-  Debug,
-  Serialize,
-  Deserialize
-)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Package {
+    pub name: String,
 
-  pub name:String,
-
-  pub version:String,
+    pub version: String,
 }

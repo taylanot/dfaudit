@@ -5,17 +5,10 @@ use chrono::{DateTime, Local};
 
 use crate::audit::models::AuditReport;
 
+pub fn generate(audit_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let mut html = String::new();
 
-pub fn generate(
-  audit_root: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
-
-
-  let mut html = String::new();
-
-
-
-html.push_str(r##"<!DOCTYPE html>
+    html.push_str(r##"<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -258,62 +251,38 @@ td[colspan]{
 <div class="no-match-note" id="no-match-note">No packages match your search.</div>
 "##);
 
+    /*
+     * Walk all audit directories
+     */
+    for entry in
+        walkdir::WalkDir::new(audit_root).into_iter().filter_map(Result::ok)
+    {
+        if !entry.file_type().is_file() {
+            continue;
+        }
 
+        if entry.file_name() != "audit-report.json" {
+            continue;
+        }
 
+        let report_path = entry.path();
 
-  /*
-   * Walk all audit directories
-   */
-  for entry in walkdir::WalkDir::new(audit_root)
-    .into_iter()
-    .filter_map(Result::ok)
-  {
+        let contents = fs::read_to_string(report_path)?;
 
-    if !entry.file_type().is_file() {
-      continue;
-    }
+        let audit: AuditReport = serde_json::from_str(&contents)?;
 
+        let modified = fs::metadata(report_path)?.modified()?;
 
-    if entry.file_name() != "audit-report.json" {
-      continue;
-    }
+        let modified: DateTime<Local> = modified.into();
 
+        let project = report_path
+            .parent()
+            .and_then(|p| p.file_name())
+            .unwrap()
+            .to_string_lossy();
 
-    let report_path = entry.path();
-
-
-
-    let contents =
-      fs::read_to_string(report_path)?;
-
-
-    let audit: AuditReport =
-      serde_json::from_str(&contents)?;
-
-
-
-    let modified =
-      fs::metadata(report_path)?
-        .modified()?;
-
-
-    let modified: DateTime<Local> =
-      modified.into();
-
-
-
-    let project =
-      report_path
-        .parent()
-        .and_then(|p|p.file_name())
-        .unwrap()
-        .to_string_lossy();
-
-
-
-
-    html.push_str(&format!(
-      r#"
+        html.push_str(&format!(
+            r#"
 <div class="card">
 <div class="header">
   <h2>{}</h2>
@@ -321,42 +290,27 @@ td[colspan]{
 </div>
 <div class="card-body">
 "#,
-      project,
-      modified.format("%Y-%m-%d %H:%M:%S"),
-    ));
+            project,
+            modified.format("%Y-%m-%d %H:%M:%S"),
+        ));
 
+        write_packages(&mut html, "Python Packages", audit.python_packages);
 
+        write_packages(&mut html, "R Packages", audit.r_packages);
 
-    write_packages(
-      &mut html,
-      "Python Packages",
-      audit.python_packages
-    );
+        html.push_str(
+            r#"
 
+</div>
 
-    write_packages(
-      &mut html,
-      "R Packages",
-      audit.r_packages
-    );
+</div>
 
-
+"#,
+        );
+    }
 
     html.push_str(
-r#"
-
-</div>
-
-</div>
-
-"#
-    );
-  }
-
-
-
-  html.push_str(
-r##"
+        r##"
 
 </div>
 
@@ -410,42 +364,27 @@ function filterPackages(value){
 
 </html>
 
-"##
-  );
+"##,
+    );
 
+    fs::write(audit_root.join("index.html"), html)?;
 
-
-  fs::write(
-    audit_root.join("index.html"),
-    html
-  )?;
-
-
-  Ok(())
+    Ok(())
 }
 
-
-
-
 fn write_packages(
-  html:&mut String,
-  title:&str,
-  packages:Option<Vec<crate::audit::models::Package>>,
-){
+    html: &mut String,
+    title: &str,
+    packages: Option<Vec<crate::audit::models::Package>>,
+) {
+    let packages = match packages {
+        Some(p) => p,
 
-
-  let packages =
-    match packages {
-
-      Some(p)=>p,
-
-      None=>return,
+        None => return,
     };
 
-
-  html.push_str(
-    &format!(
-r#"
+    html.push_str(&format!(
+        r#"
 
 <details>
 
@@ -469,19 +408,13 @@ r#"
 <tbody>
 
 "#,
-      title,
-      packages.len()
-    )
-  );
+        title,
+        packages.len()
+    ));
 
-
-
-  for package in packages {
-
-
-    html.push_str(
-      &format!(
-r#"
+    for package in packages {
+        html.push_str(&format!(
+            r#"
 
 <tr class="pkg" data-name="{}">
 
@@ -496,18 +429,14 @@ r#"
 </tr>
 
 "#,
-        package.name.to_lowercase(),
-        package.name,
-        package.version
-      )
-    );
+            package.name.to_lowercase(),
+            package.name,
+            package.version
+        ));
+    }
 
-  }
-
-
-
-  html.push_str(
-r#"
+    html.push_str(
+        r#"
 
 </tbody>
 
@@ -515,7 +444,6 @@ r#"
 
 </details>
 
-"#
-  );
-
+"#,
+    );
 }

@@ -1,151 +1,58 @@
-mod cli;
-mod container;
-mod explore;
-mod audit;
-mod report;
-mod logging;
-mod progress;
+use dfaudit::audit;
+use dfaudit::cli::Cli;
+use dfaudit::container::podman::Podman;
+use dfaudit::explore;
+use dfaudit::logging;
+use dfaudit::progress::Spinner;
+use dfaudit::report;
 
 use clap::Parser;
-use cli::Cli;
-use container::podman::Podman;
-use container::traits::ContainerEngine;
-use progress::Spinner;
-
+use dfaudit::container::traits::ContainerEngine;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
 
-  let cli = Cli::parse();
+    logging::init(cli.verbose, cli.quiet);
 
+    let files = explore::dfiles::get_files(&cli)?;
 
-  logging::init(
-    cli.verbose,
-    cli.quiet,
-  );
+    let engine = Podman::new(cli.verbose);
 
+    let mut failures = Vec::new();
 
-  let files =
-    explore::dfiles::get_files(
-      &cli
-    )?;
+    for file in files {
+        log::info!("Building image from '{}'", file.display());
 
+        let spinner = Spinner::new(cli.verbose, "Building image...");
 
-  let engine =
-    Podman::new(
-      cli.verbose
-    );
+        let build_result = engine.build(&file);
 
+        spinner.finish();
 
-  let mut failures =
-    Vec::new();
+        if let Err(err) = build_result {
+            log::error!("Build failed for '{}': {}", file.display(), err);
 
+            failures.push(format!("{}: {}", file.display(), err));
 
+            continue;
+        }
 
-  for file in files {
+        let report = audit::run(&engine, &cli.image_name)?;
 
+        report::json::write(&report, &cli.output, &file)?;
 
-    log::info!(
-      "Building image from '{}'",
-      file.display()
-    );
-
-
-
-    let spinner =
-      Spinner::new(
-        cli.verbose,
-        "Building image..."
-      );
-
-
-
-    let build_result =
-      engine.build(
-        &file
-      );
-
-
-
-    spinner.finish();
-
-
-
-    if let Err(err) = build_result {
-
-
-      log::error!(
-        "Build failed for '{}': {}",
-        file.display(),
-        err
-      );
-
-
-      failures.push(
-        format!(
-          "{}: {}",
-          file.display(),
-          err
-        )
-      );
-
-
-      continue;
-
+        engine.remove(&cli.image_name)?;
     }
 
+    if !failures.is_empty() {
+        log::error!("{} build(s) failed:", failures.len());
 
-
-    let report =
-      audit::run(
-        &engine,
-        crate::cli::IMAGE_NAME,
-      )?;
-
-
-
-    report::json::write(
-      &report,
-      &cli.output,
-      &file,
-    )?;
-
-
-
-    engine.remove(
-      crate::cli::IMAGE_NAME
-    )?;
-
-  }
-
-
-
-  if !failures.is_empty() {
-
-
-    log::error!(
-      "{} build(s) failed:",
-      failures.len()
-    );
-
-
-    for failure in failures {
-
-      log::error!(
-        "  {}",
-        failure
-      );
-
+        for failure in failures {
+            log::error!("  {}", failure);
+        }
     }
 
-  }
+    report::html::generate(&cli.output)?;
 
-
-  report::html::generate(
-    &cli.output
-  )?;
-
-
-
-  Ok(())
-
+    Ok(())
 }
