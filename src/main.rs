@@ -12,6 +12,9 @@ use serde::{Serialize,Deserialize};
 use std::fs::File;
 use std::io::Write;
 
+use chrono::{DateTime, Local};
+use std::{time::SystemTime};
+use std::fs;
 
 static IMAGE_NAME: &str = "temp-image";
 
@@ -295,6 +298,426 @@ fn report_directory(output: &Path, file: &Path) -> Result<PathBuf, String> {
 
   Ok(output_dir)
 }
+
+fn html_report( audit_root: &Path,) -> Result<(), Box<dyn std::error::Error>> {
+
+  let mut html = String::new();
+
+html.push_str(r##"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Audit Report</title>
+<style>
+:root{
+  --jh-orange:#F37626;
+  --jh-orange-dark:#E66A1F;
+  --jh-orange-light:#F5A252;
+  --jh-grey-900:#1a1a1a;
+  --jh-grey-800:#2b2b2b;
+  --jh-grey-100:#f7f7f7;
+  --jh-grey-200:#ececeb;
+  --jh-border:#e0e0e0;
+  --jh-text:#333333;
+}
+*{ box-sizing:border-box; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  background:var(--jh-grey-100);
+  margin:0;
+  color:var(--jh-text);
+}
+.topbar{
+  background:var(--jh-grey-900);
+  border-bottom:4px solid var(--jh-orange);
+  padding:18px 40px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.topbar .logo{
+  width:32px;
+  height:32px;
+  flex-shrink:0;
+}
+.topbar h1{
+  color:#fff;
+  font-size:1.3rem;
+  font-weight:600;
+  margin:0;
+  letter-spacing:.3px;
+}
+.topbar .spacer{
+  flex:1;
+}
+.gh-link{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#fff;
+  text-decoration:none;
+  font-size:.9rem;
+  font-weight:500;
+  padding:7px 14px;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:6px;
+  transition:background .15s ease, border-color .15s ease;
+}
+.gh-link:hover{
+  background:rgba(243,118,38,.15);
+  border-color:var(--jh-orange);
+}
+.gh-link svg{
+  width:18px;
+  height:18px;
+  fill:#fff;
+}
+.container{
+  max-width:1100px;
+  margin:0 auto;
+  padding:30px 20px 60px;
+}
+.search-bar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:var(--jh-grey-100);
+  padding:18px 0 6px;
+  margin-bottom:10px;
+}
+.search-bar input{
+  width:100%;
+  padding:11px 16px;
+  font-size:.95rem;
+  border:1px solid var(--jh-border);
+  border-radius:6px;
+  background:#fff;
+  color:var(--jh-text);
+  outline:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.search-bar input:focus{
+  border-color:var(--jh-orange);
+  box-shadow:0 0 0 3px rgba(243,118,38,.15);
+}
+.search-bar input::placeholder{
+  color:#999;
+}
+.no-match-note{
+  text-align:center;
+  color:#999;
+  font-style:italic;
+  padding:30px 0;
+  display:none;
+}
+tr.pkg-row.hidden{
+  display:none;
+}
+details.no-visible-rows{
+  display:none;
+}
+.card.no-visible-details{
+  display:none;
+}
+.card{
+  background:#fff;
+  margin:0 0 26px;
+  border:1px solid var(--jh-border);
+  border-radius:6px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+  overflow:hidden;
+}
+.card .header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 22px;
+  background:var(--jh-grey-200);
+  border-bottom:3px solid var(--jh-orange);
+}
+.card .header h2{
+  margin:0;
+  font-size:1.15rem;
+  color:var(--jh-grey-900);
+  font-weight:600;
+}
+.updated{
+  color:#777;
+  font-size:.8rem;
+}
+.card-body{
+  padding:20px 22px 24px;
+}
+details{
+  margin:14px 0 0;
+  border:1px solid var(--jh-border);
+  border-radius:6px;
+  overflow:hidden;
+}
+details:first-child{
+  margin-top:0;
+}
+details + details{
+  margin-top:14px;
+}
+summary{
+  cursor:pointer;
+  list-style:none;
+  padding:11px 16px;
+  background:var(--jh-orange);
+  color:#fff;
+  font-weight:600;
+  font-size:.9rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  user-select:none;
+}
+summary::-webkit-details-marker{ display:none; }
+summary::after{
+  content:"▸";
+  font-size:.85rem;
+  transition:transform .15s ease;
+}
+details[open] summary::after{
+  transform:rotate(90deg);
+}
+summary:hover{
+  background:var(--jh-orange-dark);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.9rem;
+}
+th{
+  background:var(--jh-grey-200);
+  color:var(--jh-grey-900);
+  padding:9px 16px;
+  text-align:left;
+  font-weight:600;
+  border-bottom:1px solid var(--jh-border);
+}
+td{
+  padding:8px 16px;
+  border-bottom:1px solid var(--jh-border);
+}
+tbody tr:last-child td{
+  border-bottom:none;
+}
+tbody tr:nth-child(even){
+  background:var(--jh-grey-100);
+}
+tbody tr:hover{
+  background:#fdeee0;
+}
+td[colspan]{
+  text-align:center;
+  color:#999;
+  font-style:italic;
+  background:#fff !important;
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>dfaudit (Dockerfile Audit) </h1>
+  <div class="spacer"></div>
+  <a class="gh-link" href="https://github.com/taylanot/dfaudit" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+    </svg>
+    View on GitHub
+  </a>
+</div>
+<div class="container">
+<div class="search-bar">
+  <input
+    type="text"
+    id="pkg-search"
+    placeholder="Search for a package by name..."
+    oninput="filterPackages(this.value)"
+    autocomplete="off"
+  >
+</div>
+<div class="no-match-note" id="no-match-note">No packages match your search.</div>
+"##);
+
+  let mut dirs = fs::read_dir(audit_root)?
+    .filter_map(Result::ok)
+    .collect::<Vec<_>>();
+  dirs.sort_by_key(|e| e.path());
+
+  for dir in dirs {
+    let path = dir.path();
+    if !path.is_dir() {
+      continue;
+    }
+    let report = path.join("audit-report.json");
+    if !report.exists() {
+      continue;
+    }
+    let report_json = fs::read_to_string(&report)?;
+    let audit: AuditReport = serde_json::from_str(&report_json)?;
+    let modified = fs::metadata(&report)?.modified()?;
+    let modified: DateTime<Local> = modified.into();
+    let project = path
+      .file_name()
+      .unwrap()
+      .to_string_lossy();
+
+    html.push_str(&format!(
+      r#"
+<div class="card">
+<div class="header">
+  <h2>{}</h2>
+  <div class="updated">Last Updated: {}</div>
+</div>
+<div class="card-body">
+"#,
+      project,
+      modified.format("%Y-%m-%d %H:%M:%S"),
+    ));
+
+    let python_count = audit.python_packages.as_ref().map(|p| p.len()).unwrap_or(0);
+    html.push_str(&format!(
+      r#"
+<details>
+<summary>Show Python Packages ({})</summary>
+<table>
+<thead>
+<tr>
+  <th>Package</th>
+  <th>Version</th>
+</tr>
+</thead>
+<tbody>
+"#,
+      python_count
+    ));
+
+    if let Some(packages) = audit.python_packages {
+      for package in packages {
+        html.push_str(&format!(
+          r#"
+<tr class="pkg-row" data-name="{}">
+  <td>{}</td>
+  <td>{}</td>
+</tr>
+"#,
+          package.name.to_lowercase(),
+          package.name,
+          package.version
+        ));
+      }
+    } else {
+      html.push_str(
+        r#"
+<tr>
+  <td colspan="2">No Python packages found.</td>
+</tr>
+"#,
+      );
+    }
+    html.push_str(
+      r#"
+</tbody>
+</table>
+</details>
+"#,
+    );
+
+    if let Some(packages) = audit.r_packages {
+      html.push_str(&format!(
+        r#"
+<details>
+<summary>Show R Packages ({})</summary>
+<table>
+<thead>
+<tr>
+  <th>Package</th>
+  <th>Version</th>
+</tr>
+</thead>
+<tbody>
+"#,
+        packages.len()
+      ));
+      for package in packages {
+        html.push_str(&format!(
+          r#"
+<tr class="pkg-row" data-name="{}">
+  <td>{}</td>
+  <td>{}</td>
+</tr>
+"#,
+          package.name.to_lowercase(),
+          package.name,
+          package.version
+        ));
+      }
+      html.push_str(
+        r#"
+</tbody>
+</table>
+</details>
+"#,
+      );
+    }
+
+    html.push_str("</div></div>");
+  }
+
+  html.push_str(
+    r##"
+</div>
+<script>
+function filterPackages(query) {
+  const q = query.trim().toLowerCase();
+  const rows = document.querySelectorAll("tr.pkg-row");
+  let anyMatchOverall = false;
+
+  rows.forEach((row) => {
+    const name = row.getAttribute("data-name") || "";
+    const matches = q === "" || name.includes(q);
+    row.classList.toggle("hidden", !matches);
+    if (matches) anyMatchOverall = true;
+  });
+
+  document.querySelectorAll("details").forEach((details) => {
+    const visibleRows = details.querySelectorAll("tr.pkg-row:not(.hidden)");
+    const hasRows = details.querySelectorAll("tr.pkg-row").length > 0;
+    if (hasRows) {
+      details.classList.toggle("no-visible-rows", visibleRows.length === 0);
+      details.open = q !== "" && visibleRows.length > 0;
+    }
+  });
+
+  document.querySelectorAll(".card").forEach((card) => {
+    const visibleRows = card.querySelectorAll("tr.pkg-row:not(.hidden)");
+    const hasAnyRows = card.querySelectorAll("tr.pkg-row").length > 0;
+    card.classList.toggle(
+      "no-visible-details",
+      q !== "" && hasAnyRows && visibleRows.length === 0
+    );
+  });
+
+  document.getElementById("no-match-note").style.display =
+    q !== "" && !anyMatchOverall ? "block" : "none";
+}
+</script>
+</body>
+</html>
+"##,
+  );
+
+  fs::write(audit_root.join("index.html"), html)?;
+  Ok(())
+}
+
 /// Main function that will:
 /// 1. read the cli
 /// 2. search docker/container-files
@@ -348,6 +771,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       println!("  {}", failure);
     }
   }
+  
+  html_report(&cli.output); 
 
   Ok(())
 }
