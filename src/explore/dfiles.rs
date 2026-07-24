@@ -32,8 +32,7 @@ pub fn get_files(cli: &Cli) -> Result<Vec<PathBuf>, String> {
   }
 }
 
-#[doc(hidden)]
-pub fn find_files(path: &PathBuf) -> Vec<PathBuf> {
+fn find_files(path: &PathBuf) -> Vec<PathBuf> {
   WalkDir::new(path)
     .into_iter()
     .filter_map(Result::ok)
@@ -48,4 +47,82 @@ pub fn find_files(path: &PathBuf) -> Vec<PathBuf> {
     })
     .map(|entry| entry.path().to_path_buf())
     .collect()
+}
+
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn ignores_wrong_names() {
+    let fixture_path = PathBuf::from("tests/fixtures/wrong_names");
+    let files = find_files(&fixture_path);
+    assert!(files.is_empty(), "similarly-named files should not match");
+  }
+
+  #[test]
+  fn no_matches() {
+    let fixture_path = PathBuf::from("tests/fixtures/c");
+    let files = find_files(&fixture_path);
+    assert!(files.is_empty());
+  }
+
+  #[test]
+  fn both_types() {
+    let fixture_path = PathBuf::from("tests/fixtures");
+    let files = find_files(&fixture_path);
+    let mut names: Vec<String> = files
+      .iter()
+      .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+      .collect();
+    names.sort();
+    assert_eq!(names, vec!["Containerfile", "Dockerfile"]);
+  }
+
+  #[test]
+  fn dummyfile() {
+    let fixture_path = PathBuf::from("tests/fixtures");
+    let files = find_files(&fixture_path);
+    let names: Vec<String> = files
+      .iter()
+      .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+      .collect();
+    assert!(
+      !names.contains(&"Dummyfile".to_string()),
+      "Dummyfile should never be matched"
+    );
+    assert_eq!(files.len(), 2, "expected only Dockerfile and Containerfile");
+  }
+
+  // --- get_files (pure-logic branches, no filesystem needed) ---
+
+  fn base_cli() -> Cli {
+    // Fill in whatever fields Cli actually requires.
+    // If Cli derives clap::Parser with many fields, consider a
+    // `#[cfg(test)] impl Default for Cli` or a small builder to avoid repeating this.
+    Cli {
+      file: None,
+      path: None,
+      ..Default::default() // only works if Cli: Default
+    }
+  }
+
+  #[test]
+  fn errors_when_neither_file_nor_path() {
+    let cli = base_cli();
+    let result = get_files(&cli);
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), "Provide either --file or --path");
+  }
+
+  #[test]
+  fn errors_when_both_file_and_path() {
+    let mut cli = base_cli();
+    cli.file = Some(PathBuf::from("Dockerfile"));
+    cli.path = Some(PathBuf::from("."));
+    let result = get_files(&cli);
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), "Cannot use --file and --path together");
+  }
 }
