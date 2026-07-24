@@ -10,49 +10,49 @@ use clap::Parser;
 use dfaudit::container::traits::ContainerEngine;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse();
+  let cli = Cli::parse();
 
-    logging::init(cli.verbose, cli.quiet);
+  logging::init(cli.verbose, cli.quiet);
 
-    let files = explore::dfiles::get_files(&cli)?;
+  let files = explore::dfiles::get_files(&cli)?;
 
-    let engine = Podman::new(cli.verbose);
+  let engine = Podman::new(cli.verbose);
 
-    let mut failures = Vec::new();
+  let mut failures = Vec::new();
 
-    for file in files {
-        log::info!("Building image from '{}'", file.display());
+  for file in files {
+    log::info!("Building image from '{}'", file.display());
 
-        let spinner = Spinner::new(cli.verbose, "Building image...");
+    let spinner = Spinner::new(cli.verbose, "Building image...");
 
-        let build_result = engine.build(&file);
+    let build_result = engine.build(&file);
 
-        spinner.finish();
+    spinner.finish();
 
-        if let Err(err) = build_result {
-            log::error!("Build failed for '{}': {}", file.display(), err);
+    if let Err(err) = build_result {
+      log::error!("Build failed for '{}': {}", file.display(), err);
 
-            failures.push(format!("{}: {}", file.display(), err));
+      failures.push(format!("{}: {}", file.display(), err));
 
-            continue;
-        }
-
-        let report = audit::run(&engine, &cli.image_name)?;
-
-        report::json::write(&report, &cli.output, &file)?;
-
-        engine.remove(&cli.image_name)?;
+      continue;
     }
 
-    if !failures.is_empty() {
-        log::error!("{} build(s) failed:", failures.len());
+    let report = audit::run(&engine, &cli.image_name)?;
 
-        for failure in failures {
-            log::error!("  {}", failure);
-        }
+    report::json::write(&report, &cli.output, &file)?;
+
+    engine.remove(&cli.image_name)?;
+  }
+
+  if !failures.is_empty() {
+    log::error!("{} build(s) failed:", failures.len());
+
+    for failure in failures {
+      log::error!("  {}", failure);
     }
+  }
 
-    report::html::generate(&cli.output)?;
+  report::html::generate(&cli.output)?;
 
-    Ok(())
+  Ok(())
 }
