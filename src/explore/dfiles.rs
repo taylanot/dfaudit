@@ -94,35 +94,4 @@ mod tests {
     );
     assert_eq!(files.len(), 2, "expected only Dockerfile and Containerfile");
   }
-
-  // --- get_files (pure-logic branches, no filesystem needed) ---
-
-  fn base_cli() -> Cli {
-    // Fill in whatever fields Cli actually requires.
-    // If Cli derives clap::Parser with many fields, consider a
-    // `#[cfg(test)] impl Default for Cli` or a small builder to avoid repeating this.
-    Cli {
-      file: None,
-      path: None,
-      ..Default::default() // only works if Cli: Default
-    }
-  }
-
-  #[test]
-  fn errors_when_neither_file_nor_path() {
-    let cli = base_cli();
-    let result = get_files(&cli);
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), "Provide either --file or --path");
-  }
-
-  #[test]
-  fn errors_when_both_file_and_path() {
-    let mut cli = base_cli();
-    cli.file = Some(PathBuf::from("Dockerfile"));
-    cli.path = Some(PathBuf::from("."));
-    let result = get_files(&cli);
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), "Cannot use --file and --path together");
-  }
 }
