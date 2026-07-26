@@ -15,7 +15,7 @@ fn podman_available() -> bool {
 
 
 #[test]
-fn test_build_run_and_remove() {
+fn integ_all_good() {
     if !podman_available() {
         eprintln!("Skipping test: Podman is not available");
         return;
@@ -62,7 +62,7 @@ fn test_build_run_and_remove() {
 
 
 #[test]
-fn test_build_with_missing_file() {
+fn integ_missing_file() {
     if !podman_available() {
         eprintln!("Skipping test: Podman is not available");
         return;
