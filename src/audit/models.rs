@@ -7,7 +7,7 @@ pub struct AuditReport {
   pub r_packages: Option<Vec<Package>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Package {
   pub name: String,
 

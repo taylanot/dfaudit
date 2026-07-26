@@ -49,7 +49,6 @@ fn find_files(path: &PathBuf) -> Vec<PathBuf> {
     .collect()
 }
 
-
 #[cfg(test)]
 mod tests {
   use super::*;

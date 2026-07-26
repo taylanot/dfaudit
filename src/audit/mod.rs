@@ -17,3 +17,6 @@ pub fn run<C: ContainerEngine>(
     r_packages: r::audit(engine, image)?,
   })
 }
+
+#[cfg(test)]
+pub(crate) mod test_utils;
