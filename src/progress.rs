@@ -32,3 +32,43 @@ impl Spinner {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn spinner_in_debug_mode() {
+    let spinner = Spinner::new(2, "testing");
+
+    assert!(spinner.bar.is_none());
+  }
+
+  #[test]
+  fn spinner_in_normal_mode() {
+    let spinner = Spinner::new(0, "testing");
+
+    assert!(spinner.bar.is_some());
+  }
+
+  #[test]
+  fn spinner_with_info_logging() {
+    let spinner = Spinner::new(1, "testing");
+
+    assert!(spinner.bar.is_some());
+  }
+
+  #[test]
+  fn without_spinner() {
+    let spinner = Spinner::new(2, "testing");
+
+    spinner.finish();
+  }
+
+  #[test]
+  fn with_spinner() {
+    let spinner = Spinner::new(0, "testing");
+
+    spinner.finish();
+  }
+}
