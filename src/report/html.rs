@@ -447,3 +447,127 @@ fn write_packages(
 "#,
   );
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::audit::models::{AuditReport, Package};
+  use std::fs;
+  use tempfile::tempdir;
+
+  fn write_report(root: &Path, project: &str, report: &AuditReport) {
+    let dir = root.join(project);
+
+    fs::create_dir_all(&dir).unwrap();
+
+    let json = serde_json::to_string_pretty(report).unwrap();
+
+    fs::write(dir.join("audit-report.json"), json).unwrap();
+  }
+
+  #[test]
+  fn generates_index_html() {
+    let temp = tempdir().unwrap();
+
+    let report = AuditReport {
+      python_packages: None,
+      r_packages: None,
+    };
+
+    write_report(temp.path(), "my-project", &report);
+
+    generate(temp.path()).unwrap();
+
+    assert!(temp.path().join("index.html").exists());
+  }
+
+  #[test]
+  fn includes_project_name() {
+    let temp = tempdir().unwrap();
+
+    let report = AuditReport {
+      python_packages: None,
+      r_packages: None,
+    };
+
+    write_report(temp.path(), "backend-api", &report);
+
+    generate(temp.path()).unwrap();
+
+    let html = fs::read_to_string(temp.path().join("index.html")).unwrap();
+
+    assert!(html.contains("backend-api"));
+  }
+
+  #[test]
+  fn includes_package_information() {
+    let temp = tempdir().unwrap();
+
+    let report = AuditReport {
+      python_packages: Some(vec![Package {
+        name: "requests".into(),
+        version: "2.32.0".into(),
+      }]),
+      r_packages: None,
+    };
+
+    write_report(temp.path(), "python-app", &report);
+
+    generate(temp.path()).unwrap();
+
+    let html = fs::read_to_string(temp.path().join("index.html")).unwrap();
+
+    assert!(html.contains("requests"));
+    assert!(html.contains("2.32.0"));
+    assert!(html.contains("Python Packages"));
+  }
+
+  #[test]
+  fn ignores_non_report_files() {
+    let temp = tempdir().unwrap();
+
+    fs::write(temp.path().join("random.json"), "{}").unwrap();
+
+    generate(temp.path()).unwrap();
+
+    let html = fs::read_to_string(temp.path().join("index.html")).unwrap();
+
+    assert!(!html.contains("random"));
+  }
+
+  #[test]
+  fn fails_on_invalid_report_json() {
+    let temp = tempdir().unwrap();
+
+    let project = temp.path().join("broken");
+
+    fs::create_dir_all(&project).unwrap();
+
+    fs::write(project.join("audit-report.json"), "not valid json").unwrap();
+
+    let result = generate(temp.path());
+
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn generates_multiple_projects() {
+    let temp = tempdir().unwrap();
+
+    let report = AuditReport {
+      python_packages: None,
+      r_packages: None,
+    };
+
+    write_report(temp.path(), "project-a", &report);
+
+    write_report(temp.path(), "project-b", &report);
+
+    generate(temp.path()).unwrap();
+
+    let html = fs::read_to_string(temp.path().join("index.html")).unwrap();
+
+    assert!(html.contains("project-a"));
+    assert!(html.contains("project-b"));
+  }
+}
