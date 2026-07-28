@@ -2,6 +2,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser, Default)]
+#[command(version)]
 pub struct Cli {
   #[arg(short = 'f', long = "file")]
   pub file: Option<PathBuf>,
