@@ -1,0 +1,25 @@
+# Run all hooks manually against the whole repo (useful before pushing,
+# or to test config changes) with:
+#
+#     prek run --all-files
+#
+# Skip hooks for a single commit (e.g. a WIP commit) with:
+#
+#     git commit --no-verify
+
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: "cargo fmt (auto-formats all .rs files to match rustfmt rules)"
+        entry: cargo fmt --all --
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: "cargo clippy (lints all targets/features, warnings treated as errors)"
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
