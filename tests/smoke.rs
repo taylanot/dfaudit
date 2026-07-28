@@ -12,7 +12,7 @@ fn no_panic() -> impl Predicate<str> {
 }
 
 #[test]
-fn help_and_exit() {
+fn smoke_help_and_exit() {
   bin()
     .arg("--help")
     .assert()
@@ -21,7 +21,7 @@ fn help_and_exit() {
 }
 
 #[test]
-fn version_and_exit() {
+fn smoke_version_and_exit() {
   bin()
     .arg("--version")
     .assert()
@@ -30,12 +30,12 @@ fn version_and_exit() {
 }
 
 #[test]
-fn reject_flag() {
+fn smoke_reject_flag() {
   bin().arg("--this-flag-does-not-exist").assert().failure();
 }
 
 #[test]
-fn without_argument() {
+fn smoke_without_argument() {
   // Every field on Cli is optional/has a default, so this is a valid
   // invocation. Behavior of explore::dfiles::get_files with file=None,
   // path=None is unspecified from the outside, so we only assert it
@@ -46,7 +46,7 @@ fn without_argument() {
 }
 
 #[test]
-fn nonexistent_file() {
+fn smoke_nonexistent_file() {
   let output_dir =
     tempfile::tempdir().expect("failed to create temp output dir");
   let missing_file = output_dir.path().join("Dockerfile.does-not-exist");
@@ -62,7 +62,7 @@ fn nonexistent_file() {
 }
 
 #[test]
-fn no_dockerfile() {
+fn smoke_no_dockerfile() {
   let empty_dir = tempfile::tempdir().expect("failed to create temp dir");
   let output_dir =
     tempfile::tempdir().expect("failed to create temp output dir");
@@ -103,7 +103,7 @@ fn log_and_moveon() {
 }
 
 #[test]
-fn verbosity_flag() {
+fn smoke_verbosity_flag() {
   let output_dir = tempfile::tempdir().expect("failed to create temp dir");
 
   bin()
@@ -117,7 +117,7 @@ fn verbosity_flag() {
 }
 
 #[test]
-fn shhh_quite() {
+fn smoke_shhh_quite() {
   let output_dir = tempfile::tempdir().expect("failed to create temp dir");
 
   bin()
