@@ -1,3 +1,8 @@
+//! ============================================================
+//! File: progress.rs
+//! Author: taylanot
+//! ============================================================
+
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 

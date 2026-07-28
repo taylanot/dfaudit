@@ -1,3 +1,8 @@
+//! ============================================================
+//! File: models.rs
+//! Author: taylanot
+//! ============================================================
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

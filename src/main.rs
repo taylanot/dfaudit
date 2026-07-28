@@ -1,3 +1,8 @@
+//! ============================================================
+//! File: main.rs
+//! Author: taylanot
+//! ============================================================
+
 use dfaudit::audit;
 use dfaudit::cli::Cli;
 use dfaudit::container::podman::Podman;

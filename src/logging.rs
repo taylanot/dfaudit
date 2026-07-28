@@ -1,3 +1,8 @@
+//! ============================================================
+//! File: logging.rs
+//! Author: taylanot
+//! ============================================================
+
 use env_logger::Builder;
 use log::LevelFilter;
 use std::io::Write;

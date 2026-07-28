@@ -1,3 +1,8 @@
+//! ============================================================
+//! File: e2e.rs
+//! Author: taylanot
+//! ============================================================
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::path::PathBuf;
