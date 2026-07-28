@@ -26,6 +26,7 @@ fn cleanup_image(image_name: &str) {
 }
 
 #[test]
+#[ignore = "requires podman; run with `cargo test -- --ignored`"]
 fn e2e_audits_and_reports() {
   let fixture = fixture_dir();
   assert!(

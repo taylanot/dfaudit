@@ -13,6 +13,7 @@ fn podman_available() -> bool {
 }
 
 #[test]
+#[ignore = "requires podman; run with `cargo test -- --ignored`"]
 fn integ_all_good() {
   if !podman_available() {
     eprintln!("Skipping test: Podman is not available");
