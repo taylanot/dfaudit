@@ -10,6 +10,7 @@ use dfaudit::explore;
 use dfaudit::logging;
 use dfaudit::progress::Spinner;
 use dfaudit::report;
+use dfaudit::descrip;
 
 use clap::Parser;
 use dfaudit::container::traits::ContainerEngine;
@@ -42,7 +43,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       continue;
     }
 
-    let report = audit::run(&engine, &cli.image_name)?;
+    let mut report = audit::run(&engine, &cli.image_name)?;
+
+    report.description = descrip::get_description(&file)?;
 
     report::json::write(&report, &cli.output, &file)?;
 

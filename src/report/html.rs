@@ -159,6 +159,14 @@ details.no-visible-rows{
 .card-body{
   padding:20px 22px 24px;
 }
+.description{
+  margin-bottom:20px;
+  padding:12px 16px;
+  background:#fff7ed;
+  border-left:4px solid var(--jh-orange);
+  border-radius:4px;
+  color:var(--jh-grey-900);
+}
 details{
   margin:14px 0 0;
   border:1px solid var(--jh-border);
@@ -286,17 +294,28 @@ td[colspan]{
       .unwrap()
       .to_string_lossy();
 
+    let description = audit
+      .description
+      .as_deref()
+      .unwrap_or("No description available");
+
     html.push_str(&format!(
       r#"
-<div class="card">
-<div class="header">
-  <h2>{}</h2>
-  <div class="updated">Last Updated: {}</div>
-</div>
-<div class="card-body">
-"#,
+    <div class="card">
+    <div class="header">
+      <h2>{}</h2>
+      <div class="updated">Last Updated: {}</div>
+    </div>
+
+    <div class="card-body">
+
+    <div class="description">
+      <strong>Description:</strong> {}
+    </div>
+    "#,
       project,
       modified.format("%Y-%m-%d %H:%M:%S"),
+      description,
     ));
 
     write_packages(&mut html, "Python Packages", audit.python_packages);
@@ -475,6 +494,7 @@ mod tests {
     let temp = tempdir().unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
@@ -491,6 +511,7 @@ mod tests {
     let temp = tempdir().unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
@@ -514,6 +535,7 @@ mod tests {
         version: "2.32.0".into(),
       }]),
       r_packages: None,
+      description: None,
     };
 
     write_report(temp.path(), "python-app", &report);
@@ -560,6 +582,7 @@ mod tests {
     let temp = tempdir().unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
@@ -574,5 +597,23 @@ mod tests {
 
     assert!(html.contains("project-a"));
     assert!(html.contains("project-b"));
+  }
+  #[test]
+  fn includes_description() {
+    let temp = tempdir().unwrap();
+
+    let report = AuditReport {
+      description: Some("A web server image".into()),
+      python_packages: None,
+      r_packages: None,
+    };
+
+    write_report(temp.path(), "docker-app", &report);
+
+    generate(temp.path()).unwrap();
+
+    let html = fs::read_to_string(temp.path().join("index.html")).unwrap();
+
+    assert!(html.contains("A web server image"));
   }
 }

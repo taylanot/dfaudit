@@ -10,3 +10,4 @@ pub mod explore;
 pub mod logging;
 pub mod progress;
 pub mod report;
+pub mod descrip;

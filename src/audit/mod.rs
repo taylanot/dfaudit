@@ -20,6 +20,8 @@ pub fn run<C: ContainerEngine>(
     python_packages: python::audit(engine, image)?,
 
     r_packages: r::audit(engine, image)?,
+
+    description: None
   })
 }
 

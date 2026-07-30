@@ -48,6 +48,7 @@ mod tests {
     fs::create_dir_all(dockerfile.parent().unwrap()).unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
@@ -70,6 +71,7 @@ mod tests {
     fs::create_dir_all(dockerfile.parent().unwrap()).unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
@@ -91,6 +93,7 @@ mod tests {
     let temp = tempdir().unwrap();
 
     let report = AuditReport {
+      description:None,
       python_packages: None,
       r_packages: None,
     };
@@ -114,6 +117,7 @@ mod tests {
     fs::create_dir_all(dockerfile.parent().unwrap()).unwrap();
 
     let report = AuditReport {
+      description: None,
       python_packages: None,
       r_packages: None,
     };
