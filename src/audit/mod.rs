@@ -21,7 +21,7 @@ pub fn run<C: ContainerEngine>(
 
     r_packages: r::audit(engine, image)?,
 
-    description: None
+    description: None,
   })
 }
 

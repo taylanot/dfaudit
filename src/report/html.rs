@@ -294,10 +294,8 @@ td[colspan]{
       .unwrap()
       .to_string_lossy();
 
-    let description = audit
-      .description
-      .as_deref()
-      .unwrap_or("No description available");
+    let description =
+      audit.description.as_deref().unwrap_or("No description available");
 
     html.push_str(&format!(
       r#"

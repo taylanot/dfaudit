@@ -93,7 +93,7 @@ mod tests {
     let temp = tempdir().unwrap();
 
     let report = AuditReport {
-      description:None,
+      description: None,
       python_packages: None,
       r_packages: None,
     };

@@ -6,11 +6,11 @@
 use dfaudit::audit;
 use dfaudit::cli::Cli;
 use dfaudit::container::podman::Podman;
+use dfaudit::descrip;
 use dfaudit::explore;
 use dfaudit::logging;
 use dfaudit::progress::Spinner;
 use dfaudit::report;
-use dfaudit::descrip;
 
 use clap::Parser;
 use dfaudit::container::traits::ContainerEngine;
