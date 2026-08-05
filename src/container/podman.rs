@@ -133,7 +133,6 @@ impl ContainerEngine for Podman {
     let output = Command::new("podman")
       .arg("run")
       .arg("--rm")
-      .arg("--rmi")
       .arg(image)
       .args(command)
       .output()

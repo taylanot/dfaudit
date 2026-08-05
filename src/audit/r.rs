@@ -34,7 +34,7 @@ pub fn audit<C: ContainerEngine>(
         Some(Package {
           name: parts[0].to_string(),
 
-          version: parts[1].to_string(),
+          version: parts[2].trim_matches('"').to_string(),
         })
       } else {
         None
