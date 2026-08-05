@@ -172,7 +172,7 @@ impl ContainerEngine for Podman {
 
     let mut command = Command::new("podman");
 
-    command.args(["builder", "prune -a"]);
+    command.args(["system", "prune -a"]);
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
