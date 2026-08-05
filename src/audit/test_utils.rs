@@ -48,4 +48,8 @@ impl ContainerEngine for MockEngine {
   fn remove(&self, _image: &str) -> Result<(), String> {
     Ok(())
   }
+
+  fn clean(&self) -> Result<(), String> {
+    Ok(())
+  }
 }
