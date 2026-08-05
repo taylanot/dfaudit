@@ -34,14 +34,16 @@ fn cleanup_image(image_name: &str) {
 #[ignore = "requires podman; run with `cargo test -- --ignored`"]
 fn e2e_audits_and_reports() {
   let fixture = fixture_dir();
+
   assert!(
     fixture.join("Containerfile").exists(),
-    "expected {:?} to contain a Dockerfile — check the fixture path",
+    "expected {:?} to contain a Containerfile — check the fixture path",
     fixture
   );
 
   let output_dir =
     tempfile::tempdir().expect("failed to create temp output dir");
+
   let image_name = "dfaudit-e2e-fixture-a";
 
   cleanup_image(image_name);
@@ -58,9 +60,6 @@ fn e2e_audits_and_reports() {
       .success()
       .stderr(no_panic());
 
-    // Filenames from report::json::write / report::html::generate
-    // aren't confirmed yet, so check by extension via glob rather
-    // than an exact path. Tighten this once the real names are known.
     let json_pattern = output_dir.path().join("**/*.json");
     let html_pattern = output_dir.path().join("**/*.html");
 
@@ -68,16 +67,26 @@ fn e2e_audits_and_reports() {
       .expect("invalid glob pattern")
       .filter_map(Result::ok)
       .collect();
+
     let html_reports: Vec<_> = glob::glob(html_pattern.to_str().unwrap())
       .expect("invalid glob pattern")
       .filter_map(Result::ok)
       .collect();
+
+    if json_reports.is_empty() || html_reports.is_empty() {
+      eprintln!("Files written to {}:", output_dir.path().display());
+
+      for entry in walkdir::WalkDir::new(output_dir.path()) {
+        eprintln!("{:?}", entry.unwrap().path());
+      }
+    }
 
     assert!(
       !json_reports.is_empty(),
       "expected at least one .json report in {:?}, found none",
       output_dir.path()
     );
+
     assert!(
       !html_reports.is_empty(),
       "expected at least one .html report in {:?}, found none",
@@ -86,8 +95,10 @@ fn e2e_audits_and_reports() {
 
     let json_content = std::fs::read_to_string(&json_reports[0])
       .expect("failed to read json report");
+
     let parsed: serde_json::Value = serde_json::from_str(&json_content)
       .expect("json report is not valid JSON");
+
     assert!(!parsed.is_null(), "json report parsed to null");
   });
 

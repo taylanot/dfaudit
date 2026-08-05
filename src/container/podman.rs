@@ -159,7 +159,7 @@ impl ContainerEngine for Podman {
     let status = command.status().map_err(|e| e.to_string())?;
 
     if status.success() {
-      info!("Temporary image removed and cache cleaned.");
+      info!("Temporary image removed.");
 
       Ok(())
     } else {
@@ -172,7 +172,7 @@ impl ContainerEngine for Podman {
 
     let mut command = Command::new("podman");
 
-    command.args(["system", "prune -a"]);
+    command.args(["system", "prune", "-af"]);
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
@@ -182,10 +182,9 @@ impl ContainerEngine for Podman {
 
     if status.success() {
       info!("Pruned!");
-
       Ok(())
     } else {
-      Err("Failed to prune.".into())
+      Err(format!("podman system prune failed with status: {status}"))
     }
   }
 }
