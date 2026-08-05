@@ -121,7 +121,7 @@ body{
   padding:30px 0;
   display:none;
 }
-tr.pkg-row.hidden{
+tr.pkg.hidden{
   display:none;
 }
 details.no-visible-rows{
@@ -339,45 +339,58 @@ td[colspan]{
 
 <script>
 
-
 function filterPackages(value){
 
-  let query =
-    value.toLowerCase();
+  let query = value.toLowerCase().trim();
 
+  let rows = document.querySelectorAll(".pkg");
+  let detailsSections = document.querySelectorAll("details");
+  let visibleCount = 0;
 
-  document
-    .querySelectorAll(".pkg")
-    .forEach(row=>{
-
-
-      let name =
-        row.dataset.name;
-
-
-      if(
-        name.includes(query)
-        ||
-        query === ""
-      ){
-
-        row.classList.remove(
-          "hidden"
-        );
-
-      }
-      else{
-
-        row.classList.add(
-          "hidden"
-        );
-
-      }
-
+  // Close all sections when search is cleared
+  if(query === ""){
+    detailsSections.forEach(section => {
+      section.removeAttribute("open");
     });
+  }
+
+  rows.forEach(row => {
+
+    let name = row.dataset.name.toLowerCase();
+
+    if(name.includes(query) || query === "") {
+
+      row.classList.remove("hidden");
+      visibleCount++;
+
+    } else {
+
+      row.classList.add("hidden");
+
+    }
+
+  });
+
+
+  // Automatically open sections containing matches
+  detailsSections.forEach(section => {
+
+    let matchingRows = section.querySelectorAll(".pkg:not(.hidden)");
+
+    if(query !== "" && matchingRows.length > 0){
+      section.setAttribute("open", "");
+    }
+    else if(query !== ""){
+      section.removeAttribute("open");
+    }
+
+  });
+
+
+  document.getElementById("no-match-note").style.display =
+    visibleCount === 0 ? "block" : "none";
 
 }
-
 
 </script>
 
