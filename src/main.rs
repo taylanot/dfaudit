@@ -50,6 +50,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     report::json::write(&report, &cli.output, &file)?;
 
     engine.remove(&cli.image_name)?;
+
+    engine.clean()?;
   }
 
   if !failures.is_empty() {
