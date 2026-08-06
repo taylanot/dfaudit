@@ -108,7 +108,10 @@ impl ContainerEngine for Podman {
 
     let mut command = Command::new("podman");
 
-    command.args(["build", "-t", "temp-image"]).arg("-f").arg(file);
+    command
+      .args(["build", "-t", "temp-image", "--format", "docker"])
+      .arg("-f")
+      .arg(file);
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
