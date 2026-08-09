@@ -58,9 +58,9 @@ mod tests {
     let engine = MockEngine::new().with_response(
       CMD,
       Ok(
-        b"Package Version\n\
-                  dplyr 1.1.4\n\
-                  ggplot2 3.5.1\n"
+        b" Package Version\n\
+               dplyr dplyr 1.1.4\n\
+               ggplot2 ggplot2 3.5.1\n"
           .to_vec(),
       ),
     );
@@ -86,10 +86,10 @@ mod tests {
     let engine = MockEngine::new().with_response(
       CMD,
       Ok(
-        b"Package Version\n\
-                  dplyr 1.1.4\n\
+        b" Package Version\n\
+                dplyr dplyr 1.1.4\n\
                   invalid\n\
-                  ggplot2 3.5.1\n"
+                ggplot2 ggplot2 3.5.1\n"
           .to_vec(),
       ),
     );

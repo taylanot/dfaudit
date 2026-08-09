@@ -11,4 +11,6 @@ pub trait ContainerEngine {
   fn run(&self, image: &str, command: &[&str]) -> Result<Vec<u8>, String>;
 
   fn remove(&self, image: &str) -> Result<(), String>;
+
+  fn clean(&self) -> Result<(), String>;
 }

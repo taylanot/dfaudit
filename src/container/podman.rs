@@ -108,7 +108,10 @@ impl ContainerEngine for Podman {
 
     let mut command = Command::new("podman");
 
-    command.args(["build", "-t", "temp-image"]).arg("-f").arg(file);
+    command
+      .args(["build", "-t", "temp-image", "--format", "docker"])
+      .arg("-f")
+      .arg(file);
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
@@ -146,7 +149,7 @@ impl ContainerEngine for Podman {
   }
 
   fn remove(&self, image: &str) -> Result<(), String> {
-    info!("Removing temporary image '{}'", image);
+    info!("Removing temporary image '{}'...", image);
 
     let mut command = Command::new("podman");
 
@@ -159,11 +162,32 @@ impl ContainerEngine for Podman {
     let status = command.status().map_err(|e| e.to_string())?;
 
     if status.success() {
-      info!("Temporary image removed");
+      info!("Temporary image removed.");
 
       Ok(())
     } else {
       Err("Failed to remove temporary image.".into())
+    }
+  }
+
+  fn clean(&self) -> Result<(), String> {
+    info!("Pruning the cache");
+
+    let mut command = Command::new("podman");
+
+    command.args(["system", "prune", "-af"]);
+
+    if self.verbose <= 1 {
+      command.stdout(Stdio::null()).stderr(Stdio::null());
+    }
+
+    let status = command.status().map_err(|e| e.to_string())?;
+
+    if status.success() {
+      info!("Pruned!");
+      Ok(())
+    } else {
+      Err(format!("podman system prune failed with status: {status}"))
     }
   }
 }
