@@ -25,6 +25,15 @@ pub struct Cli {
   #[arg(short, long)]
   pub quiet: bool,
 
+  #[arg(long)]
+  pub build: bool,
+
+  #[arg(long)]
+  pub html: bool,
+
+  #[arg(long)]
+  pub prune: bool,
+
   #[arg(short, long, default_value = "temp-image")]
   pub image_name: String,
 }
