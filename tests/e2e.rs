@@ -56,6 +56,9 @@ fn e2e_audits_and_reports() {
       .arg(image_name)
       .arg("--output")
       .arg(output_dir.path())
+      .arg("--html")
+      .arg("--build")
+      .arg("--prune")
       .assert()
       .success()
       .stderr(no_panic());
