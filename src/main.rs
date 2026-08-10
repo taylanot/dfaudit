@@ -5,7 +5,8 @@
 
 use dfaudit::audit;
 use dfaudit::cli::Cli;
-use dfaudit::container::podman::Podman;
+// use dfaudit::container::podman::Podman;
+use dfaudit::container::docker::Docker;
 use dfaudit::descrip;
 use dfaudit::explore;
 use dfaudit::logging;
@@ -23,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   if cli.build {
     let files = explore::dfiles::get_files(&cli)?;
 
-    let engine = Podman::new(cli.verbose);
+    let engine = Docker::new(cli.verbose);
 
     let mut failures = Vec::new();
 
