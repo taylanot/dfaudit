@@ -52,7 +52,11 @@ impl ContainerEngine for Docker {
 
     let mut command = Command::new("docker");
 
-    command.args(["build", "-t", "temp-image"]).arg("-f").arg(file).arg(".");
+    command
+      .args(["build", "-t", "temp-image"])
+      .arg("-f")
+      .arg(file)
+      .arg(file.parent().unwrap());
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
