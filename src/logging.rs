@@ -16,7 +16,9 @@ pub fn init(verbose: u8, quiet: bool) {
 
       1 => LevelFilter::Info,
 
-      _ => LevelFilter::Debug,
+      2 => LevelFilter::Debug,
+
+      _ => LevelFilter::Trace,
     }
   };
 

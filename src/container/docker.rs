@@ -4,6 +4,7 @@
 //! ============================================================
 
 use std::{
+  io,
   path::Path,
   process::{Command, Stdio},
 };
@@ -28,13 +29,19 @@ impl Docker {
 
     let mut command = Command::new("docker");
 
-    command.arg("--version");
+    command.arg("info");
 
     if self.verbose <= 1 {
       command.stdout(Stdio::null()).stderr(Stdio::null());
     }
 
-    let status = command.status().map_err(|e| e.to_string())?;
+    let status = command.status().map_err(|e| {
+      if e.kind() == io::ErrorKind::NotFound {
+        "Docker is not installed or not found on PATH.".to_string()
+      } else {
+        format!("Failed to run docker: {}", e)
+      }
+    })?;
 
     if !status.success() {
       return Err("Docker is not installed or is unavailable.".into());
