@@ -7,7 +7,7 @@ use crate::container::traits::ContainerEngine;
 
 use super::models::Package;
 
-pub fn audit<C: ContainerEngine>(
+pub fn audit<C: ContainerEngine + ?Sized>(
   engine: &C,
   image: &str,
 ) -> Result<Option<Vec<Package>>, String> {

@@ -18,6 +18,9 @@ pub struct Cli {
   #[arg(short, long, default_value = "audit")]
   pub output: PathBuf,
 
+  #[arg(short, long, default_value = "docker")]
+  pub engine: String,
+
   /// Increase logging verbosity
   #[arg( short, long, action = clap::ArgAction::Count)]
   pub verbose: u8,
