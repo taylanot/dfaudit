@@ -18,6 +18,7 @@ use dfaudit::container::traits::ContainerEngine;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let cli = Cli::parse();
+  let mut failed = false;
 
   logging::init(cli.verbose, cli.quiet);
 
@@ -45,7 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
       if let Err(err) = build_result {
         log::error!("Build failed for '{}': {}", file.display(), err);
-
         failures.push(format!("{}: {}", file.display(), err));
 
         continue;
@@ -70,15 +70,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !failures.is_empty() {
       log::error!("{} build(s) failed:", failures.len());
-
+      failed = true;
       for failure in failures {
         log::error!("  {}", failure);
       }
     }
   }
+
   if cli.html {
     log::info!("Generating html output '{}'", cli.output.display());
     report::html::generate(&cli.output)?;
+  }
+
+  if failed {
+    std::process::exit(1);
   }
 
   Ok(())
