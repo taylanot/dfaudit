@@ -32,7 +32,7 @@ fn cleanup_image(image_name: &str) {
 
 #[test]
 #[ignore = "requires podman; run with `cargo test -- --ignored`"]
-fn e2e_audits_and_reports() {
+fn e2e_podman() {
   let fixture = fixture_dir();
 
   assert!(
@@ -58,7 +58,91 @@ fn e2e_audits_and_reports() {
       .arg(output_dir.path())
       .arg("--html")
       .arg("--build")
-      .arg("--prune")
+      .arg("--engine")
+      .arg("podman")
+      .assert()
+      .success()
+      .stderr(no_panic());
+
+    let json_pattern = output_dir.path().join("**/*.json");
+    let html_pattern = output_dir.path().join("**/*.html");
+
+    let json_reports: Vec<_> = glob::glob(json_pattern.to_str().unwrap())
+      .expect("invalid glob pattern")
+      .filter_map(Result::ok)
+      .collect();
+
+    let html_reports: Vec<_> = glob::glob(html_pattern.to_str().unwrap())
+      .expect("invalid glob pattern")
+      .filter_map(Result::ok)
+      .collect();
+
+    if json_reports.is_empty() || html_reports.is_empty() {
+      eprintln!("Files written to {}:", output_dir.path().display());
+
+      for entry in walkdir::WalkDir::new(output_dir.path()) {
+        eprintln!("{:?}", entry.unwrap().path());
+      }
+    }
+
+    assert!(
+      !json_reports.is_empty(),
+      "expected at least one .json report in {:?}, found none",
+      output_dir.path()
+    );
+
+    assert!(
+      !html_reports.is_empty(),
+      "expected at least one .html report in {:?}, found none",
+      output_dir.path()
+    );
+
+    let json_content = std::fs::read_to_string(&json_reports[0])
+      .expect("failed to read json report");
+
+    let parsed: serde_json::Value = serde_json::from_str(&json_content)
+      .expect("json report is not valid JSON");
+
+    assert!(!parsed.is_null(), "json report parsed to null");
+  });
+
+  cleanup_image(image_name);
+
+  if let Err(err) = result {
+    std::panic::resume_unwind(err);
+  }
+}
+
+#[test]
+#[ignore = "requires docker; run with `cargo test -- --ignored`"]
+fn e2e_docker() {
+  let fixture = fixture_dir();
+
+  assert!(
+    fixture.join("Containerfile").exists(),
+    "expected {:?} to contain a Containerfile — check the fixture path",
+    fixture
+  );
+
+  let output_dir =
+    tempfile::tempdir().expect("failed to create temp output dir");
+
+  let image_name = "dfaudit-e2e-fixture-a";
+
+  cleanup_image(image_name);
+
+  let result = std::panic::catch_unwind(|| {
+    bin()
+      .arg("--path")
+      .arg(&fixture)
+      .arg("--image-name")
+      .arg(image_name)
+      .arg("--output")
+      .arg(output_dir.path())
+      .arg("--html")
+      .arg("--build")
+      .arg("--engine")
+      .arg("docker")
       .assert()
       .success()
       .stderr(no_panic());

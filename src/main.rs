@@ -5,6 +5,7 @@
 
 use dfaudit::audit;
 use dfaudit::cli::Cli;
+use dfaudit::container::docker::Docker;
 use dfaudit::container::podman::Podman;
 use dfaudit::descrip;
 use dfaudit::explore;
@@ -23,7 +24,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   if cli.build {
     let files = explore::dfiles::get_files(&cli)?;
 
-    let engine = Podman::new(cli.verbose);
+    let engine: Box<dyn ContainerEngine> = match cli.engine.as_str() {
+      "podman" => Box::new(Podman::new(cli.verbose)),
+      "docker" => Box::new(Docker::new(cli.verbose)),
+      other => {
+        return Err(format!("Unknown container engine: {}", other).into());
+      }
+    };
 
     let mut failures = Vec::new();
 
@@ -44,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         continue;
       }
 
-      let mut report = audit::run(&engine, &cli.image_name)?;
+      let mut report = audit::run(engine.as_ref(), &cli.image_name)?;
 
       report.description = descrip::get_description(&file)?;
 
